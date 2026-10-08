@@ -17,13 +17,18 @@ def _normalize_text(text: str) -> str:
     return text.replace("\r\n", "\n").replace("\r", "\n")
 
 
-def send_text(text: str, delay_ms: int = 0, stop_event=None) -> None:
+def send_text(text: str, delay_ms: int = 0, stop_event=None, *,
+              tabs_as_spaces=True, tab_width=4) -> None:
     if delay_ms < 0:
         raise ValueError("delay_ms must be greater than or equal to 0")
+    if not isinstance(tab_width, int) or tab_width < 1:
+        raise ValueError("tab_width must be a positive integer")
 
     stop_event = stop_event if stop_event is not None else threading.Event()
     controller = Controller()
     normalized_text = _normalize_text(text)
+    if tabs_as_spaces:
+        normalized_text = normalized_text.expandtabs(tab_width)
 
     for ch in normalized_text:
         if stop_event.is_set():
@@ -39,11 +44,13 @@ def send_text(text: str, delay_ms: int = 0, stop_event=None) -> None:
         else:
             controller.type(ch)
 
-        if delay_ms > 0 and stop_event.wait(delay_ms / 1000.0):
+        # Let the destination process Enter before sending the next line.
+        key_delay = max(0.05, delay_ms / 1000.0) if ch == "\n" else delay_ms / 1000.0
+        if key_delay > 0 and stop_event.wait(key_delay):
             return
 
 
-def send_button_action(text_widget, delay_widget, sender):
+def send_button_action(text_widget, delay_widget, sender, option_vars=None):
     if sender.running:
         return
     text = text_widget.get("1.0", "end-1c")
@@ -62,7 +69,15 @@ def send_button_action(text_widget, delay_widget, sender):
         messagebox.showerror("Invalid delay", "Delay must be zero or greater in milliseconds.")
         return
 
-    sender.start(text, delay_ms)
+    try:
+        options = {name: variable.get() for name, variable in (option_vars or {}).items()}
+        if options.get("tab_width", 4) < 1:
+            raise ValueError("Tab width must be a positive integer.")
+    except (ValueError, tk.TclError):
+        messagebox.showerror("Invalid tab width", "Tab width must be a positive integer.")
+        return
+
+    sender.start(text, delay_ms, **options)
 
 
 class TextSender:
@@ -79,7 +94,7 @@ class TextSender:
         self.worker = None
         self.poll_id = None
 
-    def start(self, text, delay_ms):
+    def start(self, text, delay_ms, **options):
         if self.running:
             return
         self.stop_event.clear()
@@ -88,18 +103,18 @@ class TextSender:
         self.stop_button.config(state=tk.NORMAL)
         self.status.set("Starting in 3 seconds — focus the destination window.")
         self.worker = threading.Thread(
-            target=self._send, args=(text, delay_ms), daemon=True
+            target=self._send, args=(text, delay_ms, options), daemon=True
         )
         self.worker.start()
         self.poll_id = self.root.after(50, self._poll)
 
-    def _send(self, text, delay_ms):
+    def _send(self, text, delay_ms, options):
         try:
             if self.stop_event.wait(3.0):
                 self.messages.put(("done", "Stopped"))
                 return
             self.messages.put(("status", "Typing…"))
-            send_text(text, delay_ms, self.stop_event)
+            send_text(text, delay_ms, self.stop_event, **options)
             result = "Stopped" if self.stop_event.is_set() else "Text sent"
             self.messages.put(("done", result))
         except Exception as exc:
@@ -145,8 +160,8 @@ def clear_button_action(text_widget):
 def build_ui():
     root = tk.Tk()
     root.title("Text-to-Keypress")
-    root.geometry("620x420")
-    root.minsize(420, 300)
+    root.geometry("620x520")
+    root.minsize(420, 420)
 
     frame = ttk.Frame(root, padding=16)
     frame.pack(fill=tk.BOTH, expand=True)
@@ -170,6 +185,26 @@ def build_ui():
     text_widget.pack(fill=tk.BOTH, expand=True)
     text_widget.focus_set()
 
+    option_vars = {
+        "tabs_as_spaces": tk.BooleanVar(value=True),
+        "tab_width": tk.IntVar(value=4),
+    }
+    options_frame = ttk.Frame(frame)
+    options_frame.pack(fill=tk.X, pady=(10, 0))
+    ttk.Label(
+        options_frame, text="For code, disable auto-indent in the destination editor.",
+    ).pack(anchor="w")
+    tab_options = ttk.Frame(options_frame)
+    tab_options.pack(fill=tk.X, pady=(4, 0))
+    ttk.Checkbutton(
+        tab_options, text="Convert tabs to spaces",
+        variable=option_vars["tabs_as_spaces"],
+    ).pack(side=tk.LEFT)
+    ttk.Label(tab_options, text="Tab width:").pack(side=tk.LEFT, padx=(16, 8))
+    ttk.Spinbox(
+        tab_options, from_=1, to=16, width=5, textvariable=option_vars["tab_width"],
+    ).pack(side=tk.LEFT)
+
     controls = ttk.Frame(frame)
     controls.pack(fill=tk.X, pady=(12, 0))
 
@@ -189,7 +224,7 @@ def build_ui():
     send_btn = ttk.Button(
         controls,
         text="Send",
-        command=lambda: send_button_action(text_widget, delay_spin, sender),
+        command=lambda: send_button_action(text_widget, delay_spin, sender, option_vars),
     )
     send_btn.pack(side=tk.LEFT)
 
@@ -218,7 +253,7 @@ def build_ui():
 
     ttk.Label(frame, textvariable=status_var).pack(anchor="w", pady=(6, 0))
 
-    root.bind("<Control-Return>", lambda event: send_button_action(text_widget, delay_spin, sender))
+    root.bind("<Control-Return>", lambda event: send_button_action(text_widget, delay_spin, sender, option_vars))
     root.mainloop()
 
 

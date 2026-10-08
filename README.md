@@ -2,6 +2,10 @@
 
 A Windows-only Python application with a simple GUI that sends text as keyboard presses to the currently active window.
 
+Two versions available.
+- uses the pynput library
+- uses the pyautogui library
+
 ## Features
 - Single-file Python GUI app
 - Types text into the focused app or text field
@@ -9,6 +13,8 @@ A Windows-only Python application with a simple GUI that sends text as keyboard 
 - Optional delay between key presses
 - Background typing keeps the interface responsive
 - Stop cancels the start countdown or ongoing typing
+- Converts tabs to spaces using the selected tab width (enabled by default)
+- Preserves blank lines without cursor movement or automatic deletion in `app.py`
 - Easy to run on Windows
 
 ## Requirements
@@ -29,6 +35,12 @@ python app.py
 3. Within the three-second start delay, click the target window or text field.
 4. The app simulates keyboard input into the active window.
 5. Click Stop to cancel. Closing the app also cancels typing.
+
+In `app.py`, newline handling sends Enter without selecting or deleting text.
+When typing code, disable auto-indent and automatic formatting in the destination
+editor so it does not add indentation to the spaces sent by the app.
+The PyAutoGUI version still has its separate auto-indent cleanup option.
+Turn off "Convert tabs to spaces" only when you want actual Tab key presses.
 
 ## Notes
 - This works best on Windows.
