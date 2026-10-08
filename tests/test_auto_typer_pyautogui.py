@@ -8,7 +8,7 @@ if not __package__:
     # Keep application imports working when this file is run directly.
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-import simple_auto_typer_pyautogui as typer
+import auto_typer_pyautogui as typer
 
 
 class EmptyLineEditor:
