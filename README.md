@@ -7,6 +7,8 @@ A Windows-only Python application with a simple GUI that sends text as keyboard 
 - Types text into the focused app or text field
 - Supports Enter, Tab, and Backspace
 - Optional delay between key presses
+- Background typing keeps the interface responsive
+- Stop cancels the start countdown or ongoing typing
 - Easy to run on Windows
 
 ## Requirements
@@ -23,9 +25,10 @@ python app.py
 
 ## How it works
 1. Type or paste the text into the app.
-2. Click the target window or text field you want to type into.
-3. Press the Send button.
+2. Press the Send button (or Ctrl+Enter).
+3. Within the three-second start delay, click the target window or text field.
 4. The app simulates keyboard input into the active window.
+5. Click Stop to cancel. Closing the app also cancels typing.
 
 ## Notes
 - This works best on Windows.
