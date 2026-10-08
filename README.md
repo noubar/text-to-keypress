@@ -10,7 +10,7 @@ Two versions available.
 - Single-file Python GUI app
 - Types text into the focused app or text field
 - Supports Enter, Tab, and Backspace
-- Optional delay between key presses
+- Adjustable delay between key presses (10 ms by default in `app.py`)
 - Background typing keeps the interface responsive
 - Stop cancels the start countdown or ongoing typing
 - Converts tabs to spaces using the selected tab width (enabled by default)

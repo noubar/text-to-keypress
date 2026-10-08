@@ -17,7 +17,7 @@ def _normalize_text(text: str) -> str:
     return text.replace("\r\n", "\n").replace("\r", "\n")
 
 
-def send_text(text: str, delay_ms: int = 0, stop_event=None, *,
+def send_text(text: str, delay_ms: int = 10, stop_event=None, *,
               tabs_as_spaces=True, tab_width=4) -> None:
     if delay_ms < 0:
         raise ValueError("delay_ms must be greater than or equal to 0")
@@ -58,7 +58,6 @@ def send_button_action(text_widget, delay_widget, sender, option_vars=None):
         messagebox.showwarning("Empty text", "Please enter some text to send.")
         return
 
-    delay_ms = 0
     try:
         delay_ms = int(delay_widget.get())
     except ValueError:
@@ -210,7 +209,7 @@ def build_ui():
 
     ttk.Label(controls, text="Delay between keys (ms):").pack(side=tk.LEFT)
 
-    delay_var = tk.StringVar(value="0")
+    delay_var = tk.StringVar(value="10")
     delay_spin = ttk.Spinbox(
         controls,
         from_=0,

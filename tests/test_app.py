@@ -35,7 +35,7 @@ class SendTextTests(unittest.TestCase):
     def test_stop_between_keys_even_without_delay(self, controller):
         stop = threading.Event()
         controller.return_value.type.side_effect = lambda char: stop.set()
-        app.send_text("abc", stop_event=stop)
+        app.send_text("abc", delay_ms=0, stop_event=stop)
         controller.return_value.type.assert_called_once_with("a")
 
     @patch("app.Controller")
